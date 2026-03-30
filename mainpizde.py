@@ -1,59 +1,78 @@
 import pygame 
 import sys
+import json
+import os
+import L1
+import L2
+
+
+SAVE_FILE = "savegame.json"
+
+def save_data(data):
+    with open(SAVE_FILE, "w") as f:
+        json.dump(data, f)
+
+def load_data():
+    if os.path.exists(SAVE_FILE):
+        with open(SAVE_FILE, "r") as f:
+            return json.load(f)
+    # Если файла нет, возвращаем значения по умолчанию
+    return {"level": 1, "score": 0} 
+
 
 pygame.init()
 FPS = pygame.time.Clock()
 
-screen = pygame.display.set_mode((987, 494))
-background = pygame.image.load('images/Background.png')
+# Теперь это сработает!
+progress = load_data()
+current_level = progress["level"]
 
-t1_x, t1_y = 940, 330
-trash1 = pygame.image.load('images/oil.png')
-resized_trash1 = pygame.transform.scale(trash1, (35, 45))
-trash1_rect = resized_trash1.get_rect(topleft=(t1_x, t1_y))
+screen = pygame.display.set_mode((1920, 1080))
 
-t2_x, t2_y = 150, 330
-trash2 = pygame.image.load('images/core bottle.png')
-resized_trash2 = pygame.transform.scale(trash2, (35, 35))
-trash2_rect = resized_trash2.get_rect(topleft=(t2_x, t2_y))
+try:
+    font = pygame.font.Font('fonts/PixelifySans-Regular.ttf', 36)
+except:
+    font = pygame.font.SysFont('Arial', 36)
 
-bush1 = pygame.image.load('images/Bush.png')
-resized_bush = pygame.transform.scale(bush1, (95, 65))
-bush_rect = resized_bush.get_rect(topleft=(t2_x - 5, t2_y))
+text_surface = font.render('Опушка леса', False, (255, 255, 255)) 
+# Твои картинки
+background = pygame.Surface((1900, 1080)) 1
+background.fill((50, 50, 50)) 
 
-trash1_exists = True
-trash2_exists = True
+Level1 = pygame.image.load('images/Level1.png')
+Level1_rect = Level1.get_rect(center=(950, 500))
 
-bg_x = 0
+ESC = pygame.image.load('images/ESC.png')
+ESC_resized = pygame.transform.scale(ESC, (50, 50))
+ESC_rect = ESC_resized.get_rect(center=(1750, 100))
+
 running = True
-
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
+            running = False
+            
         if event.type == pygame.MOUSEBUTTONDOWN:
-            # Проверяем клик по первому мусору
-            if trash1_exists and trash1_rect.collidepoint(event.pos):
-                trash1_exists = False
+            if ESC_rect.collidepoint(event.pos):
+                running = False
 
-            elif trash2_exists and trash2_rect.collidepoint(event.pos):
-                trash2_exists = False
-    
-    # Отрисовка фона
-    screen.blit(background, (bg_x, 0))
-    screen.blit(background, (bg_x + 987, 0))
-    
-    # Отрисовка куста
-    screen.blit(resized_bush, bush_rect)
-    
-    # Отрисовка мусора (только если существует)
-    if trash1_exists:
-        screen.blit(resized_trash1, trash1_rect)
-    if trash2_exists:
-        screen.blit(resized_trash2, trash2_rect)
-    
+            if Level1_rect.collidepoint(event.pos):
+                result = L1.run_level(screen)
+                
+                # АВТОСОХРАНЕНИЕ: если вернулись из уровня, сохраняем прогресс
+                # Например, пометим, что уровень 1 пройден
+                save_data({"level": 2, "score": 100})
+                
+                if result == "QUIT":
+                    running = False
+
+    screen.blit(background, (0, 0))
+    screen.blit(Level1, Level1_rect)
+    screen.blit(ESC_resized, ESC_rect)
+    screen.blit(text_surface, (850, 600))
+
     pygame.display.update()
-    FPS.tick(30)
+    FPS.tick(60)
 
 pygame.quit()
+sys.exit()
